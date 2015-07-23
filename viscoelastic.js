@@ -3,7 +3,7 @@
 var Particle2 = function(pos, vel) {
   this.position = new Vec2(pos.x, pos.y);
   this.velocity = new Vec2(vel.x, vel.y);
-}
+};
 
 function applyGravity(dt, p) {
   var g = new Vec2(0, -9.8);
@@ -32,7 +32,7 @@ function randomDisc(centre, radius) {
       l = {
         x: x,
         y: y
-      }
+      };
     }
   }
 
@@ -69,7 +69,7 @@ function hash(x, y, z, n) {
   var p1 = 73856093;
   var p2 = 19349663;
   var p3 = 83492791;
-  return Math.abs((x * p1) ^ (y * p2) ^ (z * p3)) % n;
+  return Math.abs(x * p1 ^ y * p2 ^ z * p3) % n;
 }
 
 function vecToBinId(h, n, v) {
