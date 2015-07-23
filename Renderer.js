@@ -7,11 +7,11 @@ Renderer.init = function(canvas) {
 
   this.canvas = canvas;
   this.context = canvas.getContext('2d');
-}
+};
 
 Renderer.clear = function(canvas) {
   canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-}
+};
 
 Renderer.renderParticle = function(canvas, p) {
   var ctx = canvas.getContext('2d');
@@ -27,4 +27,4 @@ Renderer.renderParticle = function(canvas, p) {
   ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
   ctx.fillStyle = 'green';
   ctx.fill();
-}
+};

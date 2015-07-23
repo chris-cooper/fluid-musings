@@ -100,13 +100,13 @@ function findNeighbours(bins, h, n, p) {
     // Final strict test
     return Vec2.distance(p1.position, p.position) < h;
   });
-};
+}
 
 function findNeighboursLinear(h, particles, p) {
   return particles.filter(function(p1) {
     return Vec2.distance(p1.position, p.position) < h;
   });
-};
+}
 
 function doubleDensityRelaxation(h, dt, particles) {
   var binCount = 1000;
