@@ -8,14 +8,13 @@ var Particle2 = function(pos, vel) {
 function applyGravity(dt, p) {
   //var g = new Vec2(0, -9.8);
   var time = Date.now() * 0.001;
-  var g = new Vec2(Math.sin(time * 0.2), Math.sin(time * 0.1 + 1.32))
-  var newVelocity = Vec2.add(p.velocity, Vec2.multiplyByScalar(dt, g));
-  return new Particle2(p.position, newVelocity);
+  var g = new Vec2(Math.sin(time * 0.2), Math.sin(time * 0.1 + 1.32));
+  var scaledG = Vec2.multiplyByScalar(dt, g, new Vec2(0, 0));
+  Vec2.add(p.velocity, scaledG, p.velocity);
 }
 
 function advance(dt, p) {
-  var newPosition = Vec2.add(p.position, Vec2.multiplyByScalar(dt, p.velocity));
-  return new Particle2(newPosition, p.velocity);
+  Vec2.add(p.position, Vec2.multiplyByScalar(dt, p.velocity, new Vec2(0, 0)), p.position);
 }
 
 function clamp(x, mn, mx) {
@@ -23,37 +22,37 @@ function clamp(x, mn, mx) {
 }
 
 function enforceBoundaries(canvas, particle) {
-  var p = particle.position;
   var aspect = canvas.height / canvas.width;
-  return new Particle2(new Vec2(clamp(p.x, 0, 10), clamp(p.y, 0, 10 * aspect)), particle.velocity);
+  particle.position.x = clamp(particle.position.x, 0, 10);
+  particle.position.y = clamp(particle.position.y, 0, 10 * aspect);
 }
 
 function computeNewVelocity(dt, ar) {
   var x = ar[0].position;
   var xprev = ar[1];
-  var newVelocity = Vec2.multiplyByScalar(1.0 / dt, Vec2.subtract(x, xprev));
-  return new Particle2(x, newVelocity);
+  Vec2.multiplyByScalar(1.0 / dt, Vec2.subtract(x, xprev, new Vec2(0, 0)), ar[0].velocity);
 }
 
 function randomDisc() {
-  var l;
-  while (!l) {
+  var pt;
+  while (typeof pt === 'undefined') {
     var x = Math.random() * 2 - 1,
       y = Math.random() * 2 - 1;
     if (x * x + y * y < 1) {
-      l = {
+      pt = {
         x: x,
         y: y
       };
     }
   }
-  return l;
+  return pt;
 }
 
 function randomParticle(centre, radius) {
   var l = randomDisc();
+  Vec2.multiplyByScalar(radius, l, l);
 
-  return new Particle2(Vec2.add(centre, Vec2.multiplyByScalar(radius, l)), {
+  return new Particle2(Vec2.add(centre, l, new Vec2(0, 0)), {
     x: 0,
     y: 0
   });
@@ -72,12 +71,12 @@ function hashVec(v, n) {
 }
 
 function vecToBinId(h, n, v) {
-  var q = Vec2.quantize(h, v);
+  var q = Vec2.quantize(h, v, new Vec2(0, 0));
   return hashVec(q, n);
 }
 
 function findNeighbours(bins, h, n, p) {
-  var q = Vec2.quantize(h, p.position);
+  var q = Vec2.quantize(h, p.position, new Vec2(0, 0));
   var neighbourCellIds = _.flatten(_.range(-1, 2).map(function(dy) {
     return _.range(-1, 2).map(function(dx) {
       return new Vec2(q.x + dx, q.y + dy);
@@ -140,18 +139,16 @@ function doubleDensityRelaxation(h, dt, particles) {
     neighbours.forEach(function(j) {
       var q = Vec2.distance(j.position, p.position) / h;
       var q1 = 1 - q;
-      var rij = Vec2.subtract(j.position, p.position);
-      var halfD = Vec2.multiplyByScalar(0.5 * dt * dt * (P * q1 + PNear * q1 * q1), rij);
+      var rij = Vec2.subtract(j.position, p.position, new Vec2(0, 0));
+      var halfD = Vec2.multiplyByScalar(0.5 * dt * dt * (P * q1 + PNear * q1 * q1), rij, new Vec2(0, 0));
 
-      j.position = Vec2.add(j.position, halfD);
-      dx = Vec2.subtract(dx, halfD);
+      Vec2.add(j.position, halfD, j.position);
+      Vec2.subtract(dx, halfD, dx);
     });
-    p.position = Vec2.add(p.position, dx);
+    Vec2.add(p.position, dx, p.position);
   };
 
   particles.forEach(relax);
-
-  return particles;
 }
 
 function integrate(particles, dt, canvas) {
@@ -159,12 +156,12 @@ function integrate(particles, dt, canvas) {
   // http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf
   var h = 0.25;
 
-  particles = particles.map(_.partial(applyGravity, dt));
+  particles.forEach(_.partial(applyGravity, dt));
   var xprev = _.pluck(particles, 'position').map(Vec2.clone);
-  particles = particles.map(_.partial(advance, dt));
-  particles = doubleDensityRelaxation(h, dt, particles);
-  particles = particles.map(_.partial(enforceBoundaries, canvas));
-  particles = _.zip(particles, xprev).map(_.partial(computeNewVelocity, dt));
+  particles.forEach(_.partial(advance, dt));
+  doubleDensityRelaxation(h, dt, particles);
+  particles.forEach(_.partial(enforceBoundaries, canvas));
+  _.zip(particles, xprev).forEach(_.partial(computeNewVelocity, dt));
   return particles;
 }
 
@@ -184,7 +181,7 @@ function run() {
   var timestep = function() {
     particles = integrate(particles, dt, canvas);
     Renderer.clear(canvas);
-    particles.map(_.partial(Renderer.renderParticle, canvas));
+    particles.forEach(_.partial(Renderer.renderParticle, canvas));
     window.requestAnimationFrame(timestep);
   };
 
