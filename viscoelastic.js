@@ -6,7 +6,9 @@ var Particle2 = function(pos, vel) {
 };
 
 function applyGravity(dt, p) {
-  var g = new Vec2(0, -9.8);
+  //var g = new Vec2(0, -9.8);
+  var time = Date.now() * 0.001;
+  var g = new Vec2(Math.sin(time * 0.2), Math.sin(time * 0.1 + 1.32))
   var newVelocity = Vec2.add(p.velocity, Vec2.multiplyByScalar(dt, g));
   return new Particle2(p.position, newVelocity);
 }
@@ -58,7 +60,7 @@ function clearCanvas(canvas) {
   canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function drawParticle(canvas, p) {
+function renderParticle(canvas, p) {
   var ctx = canvas.getContext('2d');
 
   var radius = 1.5;
@@ -91,7 +93,7 @@ function vecToBinId(h, n, v) {
   return hashVec(q, n);
 }
 
-var findNeighbours = function(bins, h, n, p) {
+function findNeighbours(bins, h, n, p) {
   var q = Vec2.quantize(h, p.position);
   var neighbourCellIds = _.flatten(_.range(-1, 2).map(function(dy) {
     return _.range(-1, 2).map(function(dx) {
@@ -113,7 +115,7 @@ var findNeighbours = function(bins, h, n, p) {
   });
 };
 
-var findNeighbours2 = function(h, particles, p) {
+function findNeighboursLinear(h, particles, p) {
   return particles.filter(function(p1) {
     return Vec2.distance(p1.position, p.position) < h;
   });
@@ -132,7 +134,7 @@ function doubleDensityRelaxation(h, dt, particles) {
 
   var relax = function(p) {
     var neighbours = findNeighbours(bins, h, binCount, p);
-    //var neighbours = findNeighbours2(h, particles, p)
+    //var neighbours = findNeighboursLinear(h, particles, p)
     var rho = 0;
     var rhoNear = 0;
 
@@ -181,9 +183,15 @@ function integrate(particles, dt) {
   return particles;
 }
 
+function initCanvas(canvas) {
+  var zoom = window.devicePixelRatio;
+  canvas.width = canvas.clientWidth * zoom;
+  canvas.height = canvas.clientHeight * zoom;
+}
 
 function run() {
   var canvas = document.getElementById('myCanvas');
+  initCanvas(canvas);
   var particleCount = 1000;
 
   var particles = _.range(particleCount).map(_.partial(randomDisc, {
@@ -196,7 +204,7 @@ function run() {
   var timestep = function() {
     particles = integrate(particles, dt);
     clearCanvas(canvas);
-    particles.map(_.partial(drawParticle, canvas));
+    particles.map(_.partial(renderParticle, canvas));
     window.requestAnimationFrame(timestep);
   };
 
