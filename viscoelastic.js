@@ -56,26 +56,6 @@ function randomDisc(centre, radius) {
   });
 }
 
-function clearCanvas(canvas) {
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function renderParticle(canvas, p) {
-  var ctx = canvas.getContext('2d');
-
-  var radius = 1.5;
-  var border = 5;
-
-  // remap
-  var centerX = border + p.position.x / 10.0 * (canvas.width - border * 2);
-  var centerY = canvas.height - (border + p.position.y / 10.0 * (canvas.width - border * 2));
-
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-  ctx.fillStyle = 'green';
-  ctx.fill();
-}
-
 function hash(x, y, z, n) {
   // http://cg.informatik.uni-freiburg.de/publications/2003_VMV_collisionDetectionHashing.pdf
   var p1 = 73856093;
@@ -181,15 +161,9 @@ function integrate(particles, dt) {
   return particles;
 }
 
-function initCanvas(canvas) {
-  var zoom = window.devicePixelRatio;
-  canvas.width = canvas.clientWidth * zoom;
-  canvas.height = canvas.clientHeight * zoom;
-}
-
 function run() {
   var canvas = document.getElementById('myCanvas');
-  initCanvas(canvas);
+  Renderer.init(canvas);
   var particleCount = 1000;
 
   var particles = _.range(particleCount).map(_.partial(randomDisc, {
@@ -201,8 +175,8 @@ function run() {
 
   var timestep = function() {
     particles = integrate(particles, dt);
-    clearCanvas(canvas);
-    particles.map(_.partial(renderParticle, canvas));
+    Renderer.clear(canvas);
+    particles.map(_.partial(Renderer.renderParticle, canvas));
     window.requestAnimationFrame(timestep);
   };
 
