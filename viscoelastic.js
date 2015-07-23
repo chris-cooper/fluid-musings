@@ -22,9 +22,10 @@ function clamp(x, mn, mx) {
   return Math.min(mx, Math.max(mn, x));
 }
 
-function enforceBoundaries(particle) {
+function enforceBoundaries(canvas, particle) {
   var p = particle.position;
-  return new Particle2(new Vec2(clamp(p.x, 0, 10), clamp(p.y, 0, 10)), particle.velocity);
+  var aspect = canvas.height / canvas.width;
+  return new Particle2(new Vec2(clamp(p.x, 0, 10), clamp(p.y, 0, 10 * aspect)), particle.velocity);
 }
 
 function computeNewVelocity(dt, ar) {
@@ -34,7 +35,7 @@ function computeNewVelocity(dt, ar) {
   return new Particle2(x, newVelocity);
 }
 
-function randomDisc(centre, radius) {
+function randomDisc() {
   var l;
   while (!l) {
     var x = Math.random() * 2 - 1,
@@ -46,11 +47,13 @@ function randomDisc(centre, radius) {
       };
     }
   }
+  return l;
+}
 
-  return new Particle2({
-    x: centre.x + radius * l.x,
-    y: centre.y + radius * l.y
-  }, {
+function randomParticle(centre, radius) {
+  var l = randomDisc();
+
+  return new Particle2(Vec2.add(centre, Vec2.multiplyByScalar(radius, l)), {
     x: 0,
     y: 0
   });
@@ -147,7 +150,7 @@ function doubleDensityRelaxation(h, dt, particles) {
   return particles;
 }
 
-function integrate(particles, dt) {
+function integrate(particles, dt, canvas) {
   // A subset of Algorithm 1
   // http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf
   var h = 0.25;
@@ -156,25 +159,26 @@ function integrate(particles, dt) {
   var xprev = _.pluck(particles, 'position').map(Vec2.clone);
   particles = particles.map(_.partial(advance, dt));
   particles = doubleDensityRelaxation(h, dt, particles);
-  particles = particles.map(enforceBoundaries);
+  particles = particles.map(_.partial(enforceBoundaries, canvas));
   particles = _.zip(particles, xprev).map(_.partial(computeNewVelocity, dt));
   return particles;
 }
 
 function run() {
   var canvas = document.getElementById('myCanvas');
+  var aspect = canvas.height / canvas.width;
   Renderer.init(canvas);
   var particleCount = 1000;
 
-  var particles = _.range(particleCount).map(_.partial(randomDisc, {
+  var particles = _.range(particleCount).map(_.partial(randomParticle, {
     x: 5,
-    y: 5
-  }, 2));
+    y: 5 * aspect
+  }, 1.5));
 
   var dt = 1.0 / 50.0;
 
   var timestep = function() {
-    particles = integrate(particles, dt);
+    particles = integrate(particles, dt, canvas);
     Renderer.clear(canvas);
     particles.map(_.partial(Renderer.renderParticle, canvas));
     window.requestAnimationFrame(timestep);
