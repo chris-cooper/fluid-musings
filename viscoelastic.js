@@ -1,36 +1,5 @@
 "use strict";
 
-var Vec2 = function(x, y) {
-  this.x = x;
-  this.y = y;
-};
-
-Vec2.clone = function(v) {
-  return new Vec2(v.x, v.y);
-}
-
-Vec2.add = function(v0, v1) {
-  return new Vec2(
-    v0.x + v1.x,
-    v0.y + v1.y
-  );
-};
-
-Vec2.subtract = function(v0, v1) {
-  return new Vec2(
-    v0.x - v1.x,
-    v0.y - v1.y
-  );
-}
-
-Vec2.multiplyByScalar = function(s, v) {
-  return new Vec2(v.x * s, v.y * s);
-}
-
-Vec2.quantize = function(radius, v) {
-  return new Vec2(Math.floor(v.x / radius), Math.floor(v.y / radius));
-};
-
 var Particle2 = function(pos, vel) {
   this.position = new Vec2(pos.x, pos.y);
   this.velocity = new Vec2(vel.x, vel.y);
@@ -95,12 +64,12 @@ function drawParticle(canvas, p) {
   ctx.fill();
 }
 
-// http://cg.informatik.uni-freiburg.de/publications/2003_VMV_collisionDetectionHashing.pdf
 function hash(x, y, z, n) {
+  // http://cg.informatik.uni-freiburg.de/publications/2003_VMV_collisionDetectionHashing.pdf
   var p1 = 73856093;
   var p2 = 19349663;
   var p3 = 83492791;
-  return ((x * p1) ^ (y * p2) ^ (z * p3)) % n;
+  return Math.abs((x * p1) ^ (y * p2) ^ (z * p3)) % n;
 }
 
 function vecToBinId(h, n, v) {
@@ -109,12 +78,16 @@ function vecToBinId(h, n, v) {
 }
 
 function doubleDensityRelaxation(h, particles) {
-  var n = 1000;
-  var particleIndices = _.pluck(particles, 'position').map(_.partial(vecToBinId, h, n));
+  var n = 100;
+  var bins = _.groupBy(particles, function(p) {
+    return vecToBinId(h, n, p.position);
+  });
+
   return particles;
 }
 
 function integrate(particles, dt) {
+  // http://www.tfsoft.org.ua/~blinkenlichten/viscoelastic-sph-10.1.1.59.9379.pdf
   var h = 0.1;
 
   particles = particles.map(_.partial(applyGravity, dt));
