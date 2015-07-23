@@ -5,7 +5,7 @@ This is a collection of (at least one) fluid algorithm examples developed with t
 * mostly self contained (minimal dependencies)
 * functional programming style (mostly)
 
-It has been open sourced in the hope that it might be useful to others.
+It has been open sourced in the hope that it might be useful to others.  Please log an issue or PR if you see implementation errors!
 
 ## Particle-based Viscoelastic Fluid Simulation
 

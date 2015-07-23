@@ -111,6 +111,7 @@ function findNeighbours(bins, h, n, p) {
     if (typeof p1 === 'undefined') {
       return false;
     }
+    // Final strict test
     return Vec2.distance(p1.position, p.position) < h;
   });
 };
@@ -140,11 +141,9 @@ function doubleDensityRelaxation(h, dt, particles) {
 
     neighbours.forEach(function(j) {
       var q = Vec2.distance(j.position, p.position) / h;
-      if (q < 1) {
-        var q1 = 1 - q;
-        rho += q1 * q1;
-        rhoNear += q1 * q1 * q1;
-      }
+      var q1 = 1 - q;
+      rho += q1 * q1;
+      rhoNear += q1 * q1 * q1;
     });
 
     var P = k * (rho - rhoZero);
@@ -153,14 +152,12 @@ function doubleDensityRelaxation(h, dt, particles) {
 
     neighbours.forEach(function(j) {
       var q = Vec2.distance(j.position, p.position) / h;
-      if (q < 1) {
-        var q1 = 1 - q;
-        var rij = Vec2.subtract(j.position, p.position);
-        var halfD = Vec2.multiplyByScalar(0.5 * dt * dt * (P * q1 + PNear * q1 * q1), rij);
+      var q1 = 1 - q;
+      var rij = Vec2.subtract(j.position, p.position);
+      var halfD = Vec2.multiplyByScalar(0.5 * dt * dt * (P * q1 + PNear * q1 * q1), rij);
 
-        j.position = Vec2.add(j.position, halfD);
-        dx = Vec2.subtract(dx, halfD);
-      }
+      j.position = Vec2.add(j.position, halfD);
+      dx = Vec2.subtract(dx, halfD);
     });
     p.position = Vec2.add(p.position, dx);
   };
@@ -171,7 +168,8 @@ function doubleDensityRelaxation(h, dt, particles) {
 }
 
 function integrate(particles, dt) {
-  // http://www.tfsoft.org.ua/~blinkenlichten/viscoelastic-sph-10.1.1.59.9379.pdf
+  // A subset of Algorithm 1
+  // http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf
   var h = 0.25;
 
   particles = particles.map(_.partial(applyGravity, dt));
