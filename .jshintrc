@@ -1,0 +1,7 @@
+{
+  "browserify": true,
+  "globals": {
+    "_": false,
+    "Vec2": false
+  }
+}

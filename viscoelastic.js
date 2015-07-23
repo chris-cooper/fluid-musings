@@ -16,6 +16,15 @@ function advance(dt, p) {
   return new Particle2(newPosition, p.velocity);
 }
 
+function clamp(x, mn, mx) {
+  return Math.min(mx, Math.max(mn, x));
+}
+
+function enforceBoundaries(particle) {
+  var p = particle.position;
+  return new Particle2(new Vec2(clamp(p.x, 0, 10), clamp(p.y, 0, 10)), particle.velocity);
+}
+
 function computeNewVelocity(dt, ar) {
   var x = ar[0].position;
   var xprev = ar[1];
@@ -52,11 +61,12 @@ function clearCanvas(canvas) {
 function drawParticle(canvas, p) {
   var ctx = canvas.getContext('2d');
 
-  var radius = 1;
+  var radius = 1.5;
+  var border = 5;
 
   // remap
-  var centerX = p.position.x * 10;
-  var centerY = canvas.height - p.position.y * 10;
+  var centerX = border + p.position.x / 10.0 * (canvas.width - border * 2);
+  var centerY = canvas.height - (border + p.position.y / 10.0 * (canvas.width - border * 2));
 
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
@@ -86,7 +96,7 @@ var findNeighbours = function(bins, h, n, p) {
   var neighbourCellIds = _.flatten(_.range(-1, 2).map(function(dy) {
     return _.range(-1, 2).map(function(dx) {
       return new Vec2(q.x + dx, q.y + dy);
-    })
+    });
   }));
   var neighbourCellHashIds = neighbourCellIds.map(function(q) {
     return hashVec(q, n);
@@ -100,29 +110,28 @@ var findNeighbours = function(bins, h, n, p) {
       return false;
     }
     return Vec2.distance(p1.position, p.position) < h;
-    //return true;
   });
-}
+};
 
 var findNeighbours2 = function(h, particles, p) {
   return particles.filter(function(p1) {
     return Vec2.distance(p1.position, p.position) < h;
   });
-}
+};
 
 function doubleDensityRelaxation(h, dt, particles) {
-  var n = 100;
+  var binCount = 1000;
   var bins = _.groupBy(particles, function(p) {
-    return vecToBinId(h, n, p.position);
+    return vecToBinId(h, binCount, p.position);
   });
 
-  var k = 100;
-  var kNear = 100;
+  var k = 30;
+  var kNear = 30;
   var rhoZero = 5.0;
   var rhoNear = 5.0;
 
   var relax = function(p) {
-    var neighbours = findNeighbours(bins, h, n, p);
+    var neighbours = findNeighbours(bins, h, binCount, p);
     //var neighbours = findNeighbours2(h, particles, p)
     var rho = 0;
     var rhoNear = 0;
@@ -143,7 +152,6 @@ function doubleDensityRelaxation(h, dt, particles) {
     neighbours.forEach(function(j) {
       var q = Vec2.distance(j.position, p.position) / h;
       if (q < 1) {
-        console.log(q)
         var q1 = 1 - q;
         var rij = Vec2.subtract(j.position, p.position);
         var halfD = Vec2.multiplyByScalar(0.5 * dt * dt * (P * q1 + PNear * q1 * q1), rij);
@@ -157,22 +165,18 @@ function doubleDensityRelaxation(h, dt, particles) {
 
   particles.forEach(relax);
 
-  /*
-  var p = _.range(particles.length).map(_.partial(gimme, 0));
-  var pnear = _.range(particles.length).map(_.partial(gimme, 0));
-  */
-
   return particles;
 }
 
 function integrate(particles, dt) {
   // http://www.tfsoft.org.ua/~blinkenlichten/viscoelastic-sph-10.1.1.59.9379.pdf
-  var h = 0.5;
+  var h = 0.25;
 
   particles = particles.map(_.partial(applyGravity, dt));
   var xprev = _.pluck(particles, 'position').map(Vec2.clone);
   particles = particles.map(_.partial(advance, dt));
   particles = doubleDensityRelaxation(h, dt, particles);
+  particles = particles.map(enforceBoundaries);
   particles = _.zip(particles, xprev).map(_.partial(computeNewVelocity, dt));
   return particles;
 }
@@ -180,13 +184,14 @@ function integrate(particles, dt) {
 
 function run() {
   var canvas = document.getElementById('myCanvas');
+  var particleCount = 1000;
 
-  var particles = _.range(100).map(_.partial(randomDisc, {
-    x: 10,
-    y: 10
-  }, 1));
+  var particles = _.range(particleCount).map(_.partial(randomDisc, {
+    x: 5,
+    y: 5
+  }, 2));
 
-  var dt = 1.0 / 24.0;
+  var dt = 1.0 / 50.0;
 
   var timestep = function() {
     particles = integrate(particles, dt);
@@ -197,8 +202,5 @@ function run() {
 
   timestep();
 }
-
-
-
 
 window.onload = run;
