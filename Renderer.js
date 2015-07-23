@@ -16,7 +16,7 @@ Renderer.clear = function(canvas) {
 Renderer.renderParticle = function(canvas, p) {
   var ctx = canvas.getContext('2d');
 
-  var radius = 1.5;
+  var radius = canvas.width * 0.005;
   var border = 5;
 
   // remap
