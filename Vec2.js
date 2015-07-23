@@ -30,3 +30,11 @@ Vec2.multiplyByScalar = function(s, v) {
 Vec2.quantize = function(radius, v) {
   return new Vec2(Math.floor(v.x / radius), Math.floor(v.y / radius));
 };
+
+Vec2.magnitude = function(v) {
+  return Math.sqrt(v.x * v.x + v.y * v.y);
+}
+
+Vec2.distance = function(v0, v1) {
+  return Vec2.magnitude(Vec2.subtract(v1,v0));
+}
