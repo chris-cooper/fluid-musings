@@ -1,4 +1,5 @@
 "use strict";
+
 var Vec2 = function(x, y) {
   this.x = x;
   this.y = y;
@@ -26,7 +27,7 @@ Vec2.multiplyByScalar = function(s, v) {
   return new Vec2(v.x * s, v.y * s);
 }
 
-Vec2.quantize = function(v, radius) {
+Vec2.quantize = function(radius, v) {
   return new Vec2(Math.floor(v.x / radius), Math.floor(v.y / radius));
 };
 
@@ -102,11 +103,24 @@ function hash(x, y, z, n) {
   return ((x * p1) ^ (y * p2) ^ (z * p3)) % n;
 }
 
+function vecToBinId(h, n, v) {
+  var q = Vec2.quantize(h, v);
+  return hash(q.x, q.y, 0, n);
+}
+
+function doubleDensityRelaxation(h, particles) {
+  var n = 1000;
+  var particleIndices = _.pluck(particles, 'position').map(_.partial(vecToBinId, h, n));
+  return particles;
+}
 
 function integrate(particles, dt) {
+  var h = 0.1;
+
   particles = particles.map(_.partial(applyGravity, dt));
   var xprev = _.pluck(particles, 'position').map(Vec2.clone);
   particles = particles.map(_.partial(advance, dt));
+  particles = doubleDensityRelaxation(h, particles);
   particles = _.zip(particles, xprev).map(_.partial(computeNewVelocity, dt));
   return particles;
 }
@@ -120,7 +134,7 @@ function run() {
     y: 10
   }, 1));
 
-  var dt = 0.001;
+  var dt = 0.01;
 
   var timestep = function() {
     particles = integrate(particles, dt);
