@@ -94,6 +94,10 @@ function findNeighbours(bins, h, n, p) {
     if (typeof p1 === 'undefined') {
       return false;
     }
+    // Ignore thyself
+    if (p1.position === p.position) {
+      return false;
+    }
     // Final strict test
     return Vec2.distance(p1.position, p.position) < h;
   });
